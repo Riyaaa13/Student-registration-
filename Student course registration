@@ -1,0 +1,269 @@
+import javax.swing.*;
+
+public class StudentCourseRegistrationSystem {
+    public static void main(String[] args) {
+        CourseDatabase courseDB = new CourseDatabase();
+        StudentDatabase studentDB = new StudentDatabase();
+
+        // Adding the courses
+        courseDB.addCourse(new Course("CSE101", "Introduction to Computer Science", "An introduction to programming and computer science concepts", 30, "Monday 10:00AM - 12:00PM"));
+        courseDB.addCourse(new Course("ENG102", "English Communication Skill", "A course focusing on communication skills and language proficiency", 25, "Tuesday 1:00PM - 3:00PM"));
+        courseDB.addCourse(new Course("ECE201", "Electronics", "Fundamentals of electronics and circuits", 20, "Wednesday 9:00AM - 11:00AM"));
+        courseDB.addCourse(new Course("CIV301", "Civil Engineering", "Introduction to civil engineering principles and practices", 35, "Thursday 10:00AM - 12:00PM"));
+        courseDB.addCourse(new Course("FDS401", "Fashion Designing", "Exploration of fashion design concepts and techniques", 15, "Friday 2:00PM - 4:00PM"));
+
+        while (true) {
+            Object[] options = {"Register Course", "See Student Information", "Drop Course", "Exit"};
+            int choice = JOptionPane.showOptionDialog(null, "Welcome to Student Course Registration System", "Main Menu", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+
+            if (choice == 0) {
+                // Register Course
+                registerCourse(courseDB, studentDB);
+            } else if (choice == 1) {
+                // See Student Information
+                seeStudentInformation(studentDB);
+            } else if (choice == 2) {
+                // Drop Course
+                dropCourse(studentDB);
+            } else {
+                // Exit
+                JOptionPane.showMessageDialog(null, "Thank you!");
+                break;
+            }
+        }
+    }
+
+    private static void registerCourse(CourseDatabase courseDB, StudentDatabase studentDB) {
+        // Sample student registration process
+        String studentName = JOptionPane.showInputDialog("Enter your name:");
+        String studentID = JOptionPane.showInputDialog("Enter your student ID:");
+        Student student = new Student(studentID, studentName);
+
+        // Display available courses
+        courseDB.displayCourseList();
+
+        // Student Registration
+        String selectedCourse = (String) JOptionPane.showInputDialog(null, "Select a course to register:", "Course Registration", JOptionPane.PLAIN_MESSAGE, null, courseDB.getCourseCodes(), null);
+        if (selectedCourse != null) {
+            Course course = courseDB.getCourse(selectedCourse);
+            if (course != null && course.getAvailableSlots() > 0) {
+                student.registerCourse(course);
+                JOptionPane.showMessageDialog(null, "You have successfully registered for " + selectedCourse);
+                studentDB.addStudent(student);
+            } else {
+                JOptionPane.showMessageDialog(null, "Sorry, the selected course is full or invalid.");
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "No course selected.");
+        }
+    }
+
+    private static void seeStudentInformation(StudentDatabase studentDB) {
+        String studentID = JOptionPane.showInputDialog("Enter student ID:");
+        Student student = studentDB.getStudent(studentID);
+        if (student != null) {
+            StringBuilder info = new StringBuilder("Student Information:\n");
+            info.append("Name: ").append(student.getName()).append("\n");
+            info.append("Student ID: ").append(student.getID()).append("\n");
+            if (student.getCourseCount() == 0) {
+                int choice = JOptionPane.showConfirmDialog(null, "This student is not registered for any courses. Do you want to register now?");
+                if (choice == JOptionPane.YES_OPTION) {
+                    registerCourse(new CourseDatabase(), studentDB); // Pass an empty CourseDatabase to initiate registration process
+                } else {
+                    JOptionPane.showMessageDialog(null, "Thank you!");
+                }
+            } else {
+                info.append("Registered Courses:\n");
+                for (int i = 0; i < student.getCourseCount(); i++) {
+                    info.append(student.getRegisteredCourses()[i].getCode()).append(" - ").append(student.getRegisteredCourses()[i].getTitle()).append("\n");
+                }
+                JOptionPane.showMessageDialog(null, info.toString());
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Student not found.");
+        }
+    }
+
+    private static void dropCourse(StudentDatabase studentDB) {
+        String studentID = JOptionPane.showInputDialog("Enter student ID:");
+        Student student = studentDB.getStudent(studentID);
+        if (student != null) {
+            String courseCode = JOptionPane.showInputDialog("Enter course code to drop:");
+            boolean dropped = student.dropCourse(courseCode);
+            if (dropped) {
+                JOptionPane.showMessageDialog(null, "Course " + courseCode + " dropped successfully.");
+            } else {
+                JOptionPane.showMessageDialog(null, "You are not registered for course " + courseCode + ".");
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Student not found.");
+        }
+    }
+}
+
+class Course {
+    private String code;
+    private String title;
+    private String description;
+    private int capacity;
+    private int enrolledStudents;
+    private String schedule;
+
+    public Course(String code, String title, String description, int capacity, String schedule) {
+        this.code = code;
+        this.title = title;
+        this.description = description;
+        this.capacity = capacity;
+        this.schedule = schedule;
+        this.enrolledStudents = 0;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+    public int getEnrolledStudents() {
+        return enrolledStudents;
+    }
+
+    public String getSchedule() {
+        return schedule;
+    }
+
+    public int getAvailableSlots() {
+        return capacity - enrolledStudents;
+    }
+
+    public void enrollStudent() {
+        enrolledStudents++;
+    }
+
+    public void dropStudent() {
+        enrolledStudents--;
+    }
+}
+
+class CourseDatabase {
+    private Course[] courses;
+    private int courseCount;
+
+    public CourseDatabase() {
+        courses = new Course[100]; // Assuming a maximum of 100 courses
+        courseCount = 0;
+    }
+
+    public void addCourse(Course course) {
+        courses[courseCount++] = course;
+    }
+
+    public Course getCourse(String code) {
+        for (int i = 0; i < courseCount; i++) {
+            if (courses[i].getCode().equals(code)) {
+                return courses[i];
+            }
+        }
+        return null;
+    }
+
+    public void displayCourseList() {
+        StringBuilder courseList = new StringBuilder("Available Courses:\n");
+        for (int i = 0; i < courseCount; i++) {
+            Course course = courses[i];
+            courseList.append(course.getCode()).append(" - ").append(course.getTitle()).append(" (").append(course.getAvailableSlots()).append(" slots available)\n");
+        }
+        JOptionPane.showMessageDialog(null, courseList.toString());
+    }
+
+    public String[] getCourseCodes() {
+        String[] courseCodes = new String[courseCount];
+        for (int i = 0; i <courseCount; i++) {
+            courseCodes[i] = courses[i].getCode();
+        }
+        return courseCodes;
+    }
+}
+
+class Student {
+    private String id;
+    private String name;
+    private Course[] registeredCourses;
+    private int courseCount;
+
+    public Student(String id, String name) {
+        this.id = id;
+        this.name = name;
+        registeredCourses = new Course[10]; // Assuming a maximum of 10 registered courses per student
+        courseCount = 0;
+    }
+
+    public String getID() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Course[] getRegisteredCourses() {
+        return registeredCourses;
+    }
+
+    public int getCourseCount() {
+        return courseCount;
+    }
+
+    public void registerCourse(Course course) {
+        registeredCourses[courseCount++] = course;
+        course.enrollStudent();
+    }
+
+    public boolean dropCourse(String code) {
+        for (int i = 0; i < courseCount; i++) {
+            if (registeredCourses[i].getCode().equals(code)) {
+                registeredCourses[i].dropStudent();
+                // Shift remaining courses in the array
+                for (int j = i; j < courseCount - 1; j++) {
+                    registeredCourses[j] = registeredCourses[j + 1];
+                }
+                courseCount--;
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+class StudentDatabase {
+    private Student[] students;
+    private int studentCount;
+
+    public StudentDatabase() {
+        students = new Student[100]; // Assuming a maximum of 100 students
+        studentCount = 0;
+    }
+
+    public void addStudent(Student student) {
+        students[studentCount++] = student;
+    }
+
+    public Student getStudent(String id) {
+        for (int i = 0; i < studentCount; i++) {
+            if (students[i].getID().equals(id)) {
+                return students[i];
+            }
+        }
+        return null;
+    }
+}
